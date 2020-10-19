@@ -120,19 +120,20 @@ to_replace = {"ain't": "am not",
 
 import re
 import unidecode
-from nltk.tokenize import word_tokenize
+from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.stem.snowball import SnowballStemmer
 from nltk.corpus import stopwords
 from pycontractions import Contractions
 from autocorrect import Speller
+from file_reader import prepare_text
 
 import os
 java_path = "C:/Program Files/Java/jdk1.8.0_261/bin/java.exe"
 os.environ['JAVAHOME'] = java_path
 
 class PreProcessor():
-    def __init__(self, remove_stopwords=True, lower=True, tokenize_word=True, contraction_method='mapping',
+    def __init__(self, file_path=None,remove_stopwords=True, lower=True, tokenize_word=True, tokenize_sent=False,contraction_method='mapping',
                  remove_numbers=True, remove_html_tags=True,
                  remove_punctuations=True, remove_accented_chars=True, remove_whitespace=True,
                  lemmatize_method='wordnet',
@@ -149,6 +150,7 @@ class PreProcessor():
         if (type(remove_stopwords) != bool or
             type(lower) != bool or
             type(tokenize_word) != bool or
+            type(tokenize_sent) != bool or
             type(remove_numbers) != bool or
             type(remove_html_tags) != bool or
             type(remove_punctuations) != bool or
@@ -171,6 +173,7 @@ class PreProcessor():
         self.doc = None
         self.tweets = None
         self.lemmatizer = None
+        self.file_path = file_path
         self.lower = lower
         self.remove_stopwords = remove_stopwords
         self.contraction_method = contraction_method
@@ -184,12 +187,17 @@ class PreProcessor():
         self.stopword_list = stopwords.words('english')
         self.replacement_list = to_replace
         self.tokenize_word = tokenize_word
+        self.tokenize_sent = tokenize_sent
         self.auto_correct = auto_correct
         if self.lemmatize_method == 'wordnet':
             self.lemmatizer = WordNetLemmatizer()
         if self.lemmatize_method == 'snowball':
             self.lemmatizer = SnowballStemmer('english')
     
+    def file_reader(self,file_path):
+        file_content = prepare_text(file_path, dolower=False)
+        return file_content
+
     def lower_fun(self):
         """
         This function converts text to lower
@@ -290,8 +298,12 @@ class PreProcessor():
         self.doc = " ".join(text.split())
 
     def tokenize_word_fun(self):
-        """tokenizes the sentences"""
+        """tokenizes the sentences to words"""
         self.doc = word_tokenize(self.doc)
+    
+    def tokenize_sent_fun(self):
+        """tokenizes the paragraphs to sentences"""
+        self.doc = sent_tokenize(self.doc)
 
     def lemmatize_fun(self):
         """
@@ -361,6 +373,10 @@ class PreProcessor():
         df = df['text].apply(obj.process)
         """
         self.doc = doc
+        # if self.file_path is True:
+        #     self.file_reader()
+        if self.tokenize_sent is True:
+            self.tokenize_sent_fun()
         if self.lower is True:
             self.lower_fun()
         if self.contractions is True:

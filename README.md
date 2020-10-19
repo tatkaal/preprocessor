@@ -41,14 +41,19 @@ PREPROCESSOR is dedicated to provide fast development platform for developers by
  ## Parameters
  ```
  >>> prepObj = PreProcessor(
-        replace_words=True,
-        remove_stopwords=True,
-        remove_numbers=True,
-        remove_HTML_tags=True,
-        remove_punctation=True,
-        lemmatize=False,
-        lemmatize_method='wordnet'
-       )
+       lower=True,
+       tokenize_word=True,
+       contraction_method='mapping',
+       remove_stopwords=True,
+       remove_numbers=True,
+       remove_html_tags=True,
+       remove_punctuations=True,
+       remove_accented_chars=True,
+       remove_whitespace=True,
+       auto_correct=True,
+       lemmatize_method='wordnet',
+      embedding_method='word2vec'
+      )
  ```
  ## Using with Pandas Library
  ```
@@ -66,9 +71,4 @@ PREPROCESSOR is dedicated to provide fast development platform for developers by
  ```
  >>> prepObj = PreProcessor()
  >>> prepObj.add_stopword(['this', 'and this'])
- ```
- ## Add more replace words
- ```
- >>> prepObj = PreProcessor()
- >>> prepObj.add_replacement([this="by this", this="by this"])
  ```

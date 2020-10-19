@@ -1,4 +1,5 @@
 from preprocessor import PreProcessor
+from nltk.tokenize import sent_tokenize
 
 prepObj = PreProcessor(
        lower=True,
@@ -12,7 +13,9 @@ prepObj = PreProcessor(
        remove_whitespace=True,
        auto_correct=True,
        lemmatize_method='wordnet',
-      embedding_method='word2vec'
+       embedding_method='word2vec'
       )
-
-print(prepObj.process("wrld Pass               café   12,13  'is isn't ain't text here @ for getting nice @here +23 google https://github.com/tatkaal/preprocessor"))
+contents = prepObj.file_reader("C:/Users/zerad/Desktop/sujan/git_repo/preprocessor/news.docx")
+example = sent_tokenize(contents)
+preprocessed = [prepObj.process(i) for i in example]
+print(preprocessed)
