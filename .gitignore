@@ -18,3 +18,4 @@ var/
 .vscode
 XDG_CACHE_HOME/
 *.pyc
+/GoogleNews-vectors-negative300.bin
