@@ -1,5 +1,15 @@
+# Install this
+# pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
+
+import os
 import re
+import io
 import unidecode
+import pickle
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from googleapiclient.http import MediaIoBaseDownload
 from nltk.tokenize import word_tokenize, sent_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.stem.snowball import SnowballStemmer
@@ -9,13 +19,16 @@ from autocorrect import Speller
 from file_reader import prepare_text
 from preprocessor.contractions import to_replace
 from gensim import downloader as api
+from configurations import pretrained_model, file_storage, token_file, credentials_json
 
-import os
 java_path = "C:/Program Files/Java/jdk1.8.0_261/bin/java.exe"
 os.environ['JAVAHOME'] = java_path
 
+# If modifying these scopes, delete the file token.pickle.
+SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+
 class PreProcessor():
-    def __init__(self, file_path=None,remove_stopwords=True, lower=True, tokenize_word=True,contraction_method='mapping',
+    def __init__(self, file_path=None,doc_link=None,folder_link=None,remove_stopwords=True, lower=True, tokenize_word=True,contraction_method='mapping',
                  remove_numbers=True, remove_html_tags=True,
                  remove_punctuations=True, remove_accented_chars=True, remove_whitespace=True,
                  lemmatize_method='wordnet',
@@ -52,13 +65,15 @@ class PreProcessor():
             raise Exception("Error - embedding method not supported")
         else:
             self.word_embedding = True
-        if file_path == None:
+        if file_path == None and doc_link==None and folder_link==None:
             raise Exception("Error - expecting the file path")
         self.doc = None
         self.sents = None
         self.tweets = None
         self.lemmatizer = None
         self.file_path = file_path
+        self.doc_link = doc_link
+        self.folder_link = folder_link
         self.lower = lower
         self.remove_stopwords = remove_stopwords
         self.contraction_method = contraction_method
@@ -82,6 +97,139 @@ class PreProcessor():
     def file_reader(self):
         file_content = prepare_text(self.file_path, dolower=False)
         return file_content
+
+    def doc_downloader(self,document_link,document_type,document_name):
+        # Extracting the ID from the given link
+        pattern = r"(?<=d/)(.+)(?=/)"   
+        DOCUMENT_ID = re.findall(pattern,document_link)[0]
+        print (f"DOCUMENT ID: {DOCUMENT_ID}") 
+
+        # Specifying the format in which the document will be downloaded
+        if document_type.lower() in ['docx',"doc"]:
+            file_format = "docx"
+        elif document_type.lower() in ['pdf']:
+            file_format = "pdf"
+        else:
+            print ("Document Format Not Supported. Only Docs, Doc and PDF are supported")
+            return None
+
+        creds = None
+        
+        if os.path.exists(token_file):
+            with open(token_file,'rb') as token:
+                creds = pickle.load(token)
+        
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    credentials_json,SCOPES)
+                creds = flow.run_local_server(port=0)
+            with open(token_file,'wb') as token:
+                pickle.dump(creds,token)
+        service = build('drive','v3',credentials=creds)
+
+        file_name = '.'.join([document_name,file_format])
+        try:
+            print ("Downloading file")
+            request = service.files().get_media(fileId=DOCUMENT_ID)
+            fh = io.BytesIO()
+            downloader = MediaIoBaseDownload(fd=fh,request=request)
+            done = False
+            while done is False:
+                status, done = downloader.next_chunk()
+                print (f"Download {status.progress()*100}")
+        except:
+            print ("Downloading MS Word Document file")
+            request = service.files().export_media(fileId=DOCUMENT_ID,mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+            fh = io.BytesIO()
+            downloader = MediaIoBaseDownload(fd=fh,request=request)
+            done = False
+            while done is False:
+                status, done = downloader.next_chunk()
+                print (f"Download {status.progress()*100}")
+                
+        fh.seek(0)
+        with open(os.path.join(file_storage,file_name),'wb') as f:
+            f.write(fh.read())
+            f.close()
+            print("SAVED")
+
+    def folder_downloader(self,folder_link):
+        # Extracting the ID from the given link
+        pattern = r'(?<=folders/)(\w+)'   
+        DOCUMENT_ID = re.findall(pattern,folder_link)[0]
+        print (f"DOCUMENT ID: {DOCUMENT_ID}")
+
+        creds = None
+        
+        if os.path.exists(token_file):
+            with open(token_file,'rb') as token:
+                creds = pickle.load(token)
+        
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    credentials_json,SCOPES)
+                creds = flow.run_local_server(port=0)
+            with open(token_file,'wb') as token:
+                pickle.dump(creds,token)
+        service = build('drive','v3',credentials=creds)
+
+        listofFiles = []
+        page_token = None
+        # docx_query = f"'{DOCUMENT_ID}' in parents and mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document'"
+        # pdf_query = f"'{DOCUMENT_ID}' in parents and mimeType='application/pdf'"
+        # txt_query = f"'{DOCUMENT_ID}' in parents and mimeType='text/plain'"
+        query = f"'{DOCUMENT_ID}' in parents"
+        while True:
+            response = service.files().list(
+                q=query,
+                fields='nextPageToken, files(id, name)',
+                pageToken = page_token,
+                includeItemsFromAllDrives=True,
+                supportsAllDrives=True
+            ).execute()
+            for file in response.get('files',[]):
+                listofFiles.append(file)
+
+            page_token = response.get('nextPageToken',None)
+            if page_token is None:
+                break
+
+        for item in listofFiles:
+            document_id = item['id']
+            file_name = item['name']
+            name_splitted = file_name.split(".")
+            if len(name_splitted) == 1:
+                file_name = '.'.join([file_name,"docx"])
+            try:
+                print ("Downloading docx file")
+                print (file_name)
+                request = service.files().get_media(fileId=document_id)
+                fh = io.BytesIO()
+                downloader = MediaIoBaseDownload(fd=fh,request=request)
+                done = False
+                while done is False:
+                    status, done = downloader.next_chunk()
+                    print (f"Download {status.progress()*100}")
+            except:
+                print ("Downloading doc file")
+                print (file_name)
+                request = service.files().export_media(fileId=document_id,mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+                fh = io.BytesIO()
+                downloader = MediaIoBaseDownload(fd=fh,request=request)
+                done = False
+                while done is False:
+                    status, done = downloader.next_chunk()
+                    print (f"Download {status.progress()*100}")
+            fh.seek(0)
+            with open(file_storage+'/'+file_name,'wb') as f:
+                f.write(fh.read())
+                f.close()
 
     def lower_fun(self):
         """
@@ -139,7 +287,7 @@ class PreProcessor():
         if self.contraction_method == 'mapping':
             self.doc = self.mapping_decontraction(str(self.doc))
         elif self.contraction_method == 'word2vec':
-            model = "GoogleNews-vectors-negative300.bin"
+            model = pretrained_model
             cont = Contractions(model)
             cont.load_models()
             self.doc = list(cont.expand_texts([str(self.doc)],precise=True))[0]
@@ -268,6 +416,13 @@ class PreProcessor():
         """
         if self.file_path != None:
             data = self.file_reader()
+        if self.doc_link != None:
+            self.doc_downloader(self.doc_link,"docx","testing_document")
+            path = file_storage+'/testing_document.docx'
+            data = prepare_text(path, dolower=False)
+        if self.folder_link != None:
+            self.folder_downloader(self.folder_link)
+            data = 'test'
         output=[]
         self.sents = sent_tokenize(data)
         for doc in self.sents:

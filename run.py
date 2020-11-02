@@ -1,24 +1,11 @@
-from preprocessor import PreProcessor
-from nltk.tokenize import sent_tokenize
+from path_processors import local_processor, url_file_processor, url_folder_processor
+from configurations import filePath, doc_link, folder_link
 
-filePath = "C:/Users/zerad/Desktop/sujan/git_repo/preprocessor/news.docx"
+lo_output = local_processor(filePath)
+# print(lo_output)
 
-prepObj = PreProcessor(
-       file_path=filePath,
-       lower=True,
-       tokenize_word=False, #if false the output will be in list of sentences
-       remove_stopwords=True,
-       remove_numbers=True,
-       remove_html_tags=True,
-       remove_punctuations=True,
-       remove_accented_chars=True,
-       remove_whitespace=True,
-       auto_correct=True,
-       lemmatize_method='snowball',
-       embedding_method='word2vec',
-       contraction_method='mapping',
-      )
+url_file_output = url_file_processor(doc_link)
+print(url_file_output)
 
-preprocessed = prepObj.process()
-
-print(preprocessed)
+url_folder_output = url_folder_processor(folder_link)
+# print(url_folder_output)
