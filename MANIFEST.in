@@ -1,0 +1,2 @@
+include processit/models/*
+include processit/temp_files/*

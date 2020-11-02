@@ -16,10 +16,10 @@ from nltk.stem.snowball import SnowballStemmer
 from nltk.corpus import stopwords
 from pycontractions import Contractions
 from autocorrect import Speller
-from file_reader import prepare_text
-from preprocessor.contractions import to_replace
+from processit.file_reader import prepare_text
+from processit.contractions import to_replace
 from gensim import downloader as api
-from configurations import pretrained_model, file_storage, token_file, credentials_json
+from processit.configurations import pretrained_model, file_storage, token_file, credentials_json
 
 java_path = "C:/Program Files/Java/jdk1.8.0_261/bin/java.exe"
 os.environ['JAVAHOME'] = java_path

@@ -14,7 +14,7 @@ with io.open(os.path.join(CURDIR, "README.md"), "r", encoding="utf-8") as f:
     README = f.read()
 
 setup(
-    name="preprocessor",
+    name="processit",
     version="1.0.0",
     author="Infodevelopers pvt. ltd.",
     author_email="info@infodev.com.np",
@@ -25,7 +25,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     test_suite="tests.test_project",
-    packages=["preprocessor"],
+    packages=["processit"],
     python_requires=">=3.4",
     license="License :: OSI Approved :: MIT License",
     classifiers=[
