@@ -1,4 +1,6 @@
-from path_processors import local_processor, url_file_processor, url_folder_processor
+# from path_processors import local_processor, url_file_processor, url_folder_processor
+
+from preprocessor.preprocessor import local_processor, url_file_processor, url_folder_processor
 from configurations import filePath, doc_link, folder_link
 
 lo_output = local_processor(filePath)
