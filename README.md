@@ -17,10 +17,16 @@ PREPROCESSOR is dedicated to provide fast development platform for developers by
  1) requires jdk version-8
 	- pycontractions will only work for java version-8
 
+   - link to download jdk:
+         -- https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html
+   
+   - link to download jre:
+         -- https://www.oracle.com/java/technologies/javase-jre8-downloads.html
+
  2) Download pre-trained models for embeddings and contractions
 	- python -m gensim.downloader --download glove-twitter-25
    - To download googlenews model
-      --https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz
+      -- https://s3.amazonaws.com/dl4j-distribution/GoogleNews-vectors-negative300.bin.gz
  ```
 
 # Functionalities
